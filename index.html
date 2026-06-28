@@ -129,6 +129,49 @@
     margin-bottom:8px;
   }
 
+  /* Recipe */
+  .recipe-toggle{
+    width:100%;border:none;background:none;text-align:center;margin-top:6px;
+    font-size:13px;color:var(--curry);font-weight:600;cursor:pointer;font-family:'Work Sans',sans-serif;
+    padding:6px;
+  }
+  .recipe-panel{display:none;margin-top:10px;background:var(--surface);border-radius:14px;
+    padding:16px 18px;box-shadow:0 2px 8px rgba(58,42,30,0.06);}
+  .recipe-panel.open{display:block;}
+  .recipe-panel h3{
+    font-family:'Fraunces',serif;font-size:14.5px;font-weight:600;margin:0 0 8px;
+  }
+  .recipe-panel ul, .recipe-panel ol{margin:0 0 14px;padding-left:20px;}
+  .recipe-panel ul{padding-left:18px;}
+  .recipe-panel li{font-size:13.5px;line-height:1.5;margin-bottom:4px;}
+  .recipe-note{
+    font-size:11.5px;color:var(--ink-soft);font-family:'Space Mono',monospace;
+    border-top:1px solid var(--line);padding-top:10px;margin-top:2px;line-height:1.5;
+  }
+
+  /* Dashboard */
+  .dashboard{margin-top:30px;}
+  .dashboard-head{
+    display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;
+  }
+  .dashboard-head h2{
+    font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin:0;
+  }
+  .dashboard-head span{font-size:11px;color:var(--ink-soft);font-family:'Space Mono',monospace;}
+  .dash-row{display:flex;gap:10px;}
+  .dash-card{
+    flex:1;background:var(--surface);border-radius:14px;padding:14px 10px;
+    text-align:center;box-shadow:0 2px 8px rgba(58,42,30,0.06);
+  }
+  .dash-card .dash-label{
+    font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--ink-soft);
+  }
+  .dash-card .dash-value{
+    font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin:5px 0 1px;
+  }
+  .dash-card .dash-unit{font-size:11px;color:var(--ink-soft);}
+
   /* History */
   .history-section{margin-top:34px;}
   .history-head{
@@ -205,6 +248,46 @@
   <div class="manual-panel" id="manualPanel">
     <select class="manual-select" id="manualSelect"></select>
     <button class="ghost" id="manualLogBtn" style="width:100%;">Log this instead</button>
+  </div>
+
+  <button class="recipe-toggle" id="recipeToggle">📖 View recipe & nutrition</button>
+  <div class="recipe-panel" id="recipePanel">
+    <h3>Ingredients</h3>
+    <ul id="recipeIngredients"></ul>
+    <h3>Method</h3>
+    <ol id="recipeSteps"></ol>
+    <div class="recipe-note" id="recipeNote"></div>
+  </div>
+
+  <div class="dashboard">
+    <div class="dashboard-head">
+      <h2>Your intake</h2>
+      <span>from logged history</span>
+    </div>
+    <div class="dash-row">
+      <div class="dash-card">
+        <div class="dash-label">Today</div>
+        <div class="dash-value" id="dashTodayKcal">0</div>
+        <div class="dash-unit">kcal</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">Today</div>
+        <div class="dash-value" id="dashTodayProtein">0</div>
+        <div class="dash-unit">g protein</div>
+      </div>
+    </div>
+    <div class="dash-row" style="margin-top:10px;">
+      <div class="dash-card">
+        <div class="dash-label">This week</div>
+        <div class="dash-value" id="dashWeekKcal">0</div>
+        <div class="dash-unit">kcal</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">This week</div>
+        <div class="dash-value" id="dashWeekProtein">0</div>
+        <div class="dash-unit">g protein</div>
+      </div>
+    </div>
   </div>
 
   <div class="history-section">
@@ -298,6 +381,84 @@ const DB = [
 
 const byId = Object.fromEntries(DB.map(d => [d.id, d]));
 
+/* Nutrition is per single serving. For lunch/dinner dal & sabzi, the numbers
+   are for the curry itself only — add your own roti/rice on top of these,
+   since that amount varies person to person. Ingredient lists are for the
+   batch size noted (usually ~2 servings), independent of the nutrition serving size. */
+const RECIPES = {
+  b01:{ingredients:["1 cup whole wheat flour","Water, as needed","1/2 tsp salt","Ghee, for layering & cooking"],steps:["Knead flour, salt and water into a soft dough.","Rest 15 min.","Roll into a disc, smear ghee, fold and roll again.","Roast on a hot tawa with ghee till golden spots form on both sides."],nutrition:{kcal:150,protein:4,carbs:22,fat:6}},
+  b02:{ingredients:["1 cup whole wheat flour","2 boiled potatoes, mashed","1 green chili, chopped","1/4 tsp ajwain","Coriander leaves, chopped","Salt, red chili powder","Ghee, for cooking"],steps:["Knead a plain dough; rest 15 min.","Mix mashed potato with chili, ajwain, coriander and spices for the filling.","Stuff a dough ball with filling and roll out carefully.","Roast on tawa with ghee till golden on both sides."],nutrition:{kcal:250,protein:5,carbs:38,fat:9}},
+  b03:{ingredients:["Same as Aloo Paratha","+ 1 finely chopped onion mixed into the filling"],steps:["Follow Aloo Paratha method.","Mix the chopped onion into the potato filling before stuffing.","Roll and roast with ghee till golden."],nutrition:{kcal:260,protein:5,carbs:39,fat:9}},
+  b04:{ingredients:["1 cup whole wheat flour","150g paneer, grated","1 green chili, chopped","Coriander leaves","Salt, garam masala","Ghee, for cooking"],steps:["Knead a plain dough; rest 15 min.","Mix grated paneer with chili, coriander and spices.","Stuff and roll the dough carefully (paneer can tear easily).","Roast on tawa with ghee till golden."],nutrition:{kcal:280,protein:9,carbs:32,fat:12}},
+  b05:{ingredients:["1 cup whole wheat flour","1 cup grated cauliflower, squeezed dry","1 green chili, ginger, coriander","Salt","Ghee, for cooking"],steps:["Knead a plain dough; rest 15 min.","Squeeze grated gobi well to remove water, mix with spices.","Stuff and roll carefully.","Roast on tawa with ghee till golden."],nutrition:{kcal:230,protein:5,carbs:34,fat:8}},
+  b06:{ingredients:["1 cup whole wheat flour","1 cup grated mooli (radish), squeezed dry","1 green chili, coriander, ajwain","Salt","Ghee, for cooking"],steps:["Knead a plain dough; rest 15 min.","Squeeze grated mooli well, mix with spices for filling.","Stuff and roll carefully.","Roast on tawa with ghee till golden on both sides."],nutrition:{kcal:220,protein:5,carbs:33,fat:8}},
+  b07:{ingredients:["1 cup whole wheat flour","1 cup chopped fenugreek (methi) leaves","Ajwain, red chili powder, salt","Ghee, for cooking"],steps:["Knead methi leaves directly into the dough with spices and a little water.","Rest 10 min.","Roll out and roast on tawa with ghee till golden."],nutrition:{kcal:200,protein:5,carbs:30,fat:7}},
+  b08:{ingredients:["Bhature: 1 cup maida, 2 tbsp curd, 1/2 tsp baking soda, salt, oil for frying","Chole: 1 cup boiled chickpeas, 1 onion, 2 tomatoes, ginger-garlic, chole masala, oil"],steps:["Knead bhature dough with curd and soda; rest covered for 2 hrs.","Roll small ovals and deep fry till puffed and golden.","For chole, sauté onion-tomato-ginger-garlic till oil separates, add chole masala and boiled chickpeas, simmer 15 min.","Serve hot bhature with the chole."],nutrition:{kcal:550,protein:14,carbs:70,fat:22}},
+  b09:{ingredients:["Puri: 1 cup wheat flour, water, salt, oil for frying","Aloo sabzi: 2 boiled potatoes, mustard seeds, cumin, turmeric, green chili"],steps:["Knead a stiff dough, roll into small discs.","Deep fry puris till puffed and golden.","Temper mustard/cumin, add mashed potato, turmeric and a little water, simmer briefly.","Serve puri hot with the aloo sabzi."],nutrition:{kcal:400,protein:7,carbs:55,fat:16}},
+  b10:{ingredients:["1.5 cups flattened rice (poha)","1 onion","Mustard seeds, curry leaves, turmeric, green chili","Peanuts","Lemon, sev for topping","Oil"],steps:["Rinse poha briefly till soft, drain and set aside.","Temper mustard seeds, curry leaves, onion and peanuts in oil.","Add turmeric and poha, toss gently to combine.","Finish with lemon juice and a topping of sev."],nutrition:{kcal:250,protein:5,carbs:45,fat:6}},
+  b11:{ingredients:["1 cup rava (semolina)","1 onion","Mustard seeds, curry leaves, green chili","Carrots/peas, optional","2.5 cups water","Oil"],steps:["Dry roast rava till aromatic; set aside.","Temper mustard, curry leaves, onion and vegetables in oil.","Add water, bring to a boil.","Stir in roasted rava gradually, cook till fluffy and water is absorbed."],nutrition:{kcal:230,protein:5,carbs:35,fat:8}},
+  b12:{ingredients:["Idli/dosa batter (fermented rice-urad)","Sambar: 1/2 cup toor dal, mixed veg, tamarind, sambar masala, mustard seeds, curry leaves"],steps:["Steam idli batter in greased idli moulds for 10-12 min.","For sambar, cook dal till soft with turmeric, mash lightly.","Add cooked vegetables, tamarind water and sambar masala, simmer 10 min.","Temper mustard and curry leaves, add to sambar; serve with idli and chutney."],nutrition:{kcal:250,protein:8,carbs:45,fat:4}},
+  b13:{ingredients:["Dosa batter","2 boiled potatoes","1 onion","Mustard seeds, curry leaves, turmeric","Oil/ghee for the tawa"],steps:["Temper mustard, curry leaves and onion, mash in boiled potato with turmeric for the filling.","Spread dosa batter thin on a hot tawa, drizzle oil around the edges.","Place potato filling on one half, fold over.","Serve hot with sambar and chutney."],nutrition:{kcal:350,protein:7,carbs:50,fat:12}},
+  b14:{ingredients:["1 cup besan (gram flour)","Water, as needed","Chopped onion, tomato, green chili","Turmeric, ajwain, salt","Oil"],steps:["Whisk besan with water to a smooth, lump-free batter.","Stir in chopped vegetables and spices.","Pour a ladle on a hot greased tawa, spread thin.","Cook both sides till golden and crisp at the edges."],nutrition:{kcal:220,protein:10,carbs:24,fat:9}},
+  b15:{ingredients:["1 cup split moong dal, soaked 3-4 hrs","Ginger, green chili","Cumin, salt","Chopped onion","Oil"],steps:["Grind soaked dal with ginger and chili to a smooth, thick batter.","Mix in cumin, salt and chopped onion.","Pour on a hot tawa, spread thin.","Cook both sides till golden."],nutrition:{kcal:200,protein:12,carbs:22,fat:6}},
+  b16:{ingredients:["1 cup sabudana (tapioca pearls), soaked 3-4 hrs","2 boiled potatoes, diced","Peanuts, cumin, green chili, curry leaves","Lemon, ghee"],steps:["Soak sabudana till soft and fluffy, drain excess water well.","Temper cumin, curry leaves, chili and peanuts in ghee.","Add diced potato, sauté briefly, then add sabudana and salt.","Toss till translucent and finish with lemon juice."],nutrition:{kcal:300,protein:4,carbs:45,fat:11}},
+  b17:{ingredients:["1 cup vermicelli","1 onion","Mustard seeds, curry leaves","Mixed veg, optional","Water, oil"],steps:["Dry roast vermicelli till light golden; set aside.","Temper mustard, curry leaves, onion and vegetables.","Add water and bring to a boil.","Add roasted vermicelli, cover and cook till soft."],nutrition:{kcal:220,protein:5,carbs:34,fat:7}},
+  b18:{ingredients:["1 cup roasted rava (sooji)","1/2 cup curd","Water, as needed","Mustard seeds, curry leaves, cashews","Eno or baking soda"],steps:["Mix roasted rava with curd and water into a thick batter; rest 20 min.","Temper mustard, curry leaves and cashews, fold into the batter.","Add eno just before steaming.","Steam in greased idli moulds for 12-15 min."],nutrition:{kcal:230,protein:6,carbs:35,fat:7}},
+  b19:{ingredients:["1 cup moong sprouts, coarsely ground","2 tbsp besan","Onion, green chili, coriander","Cumin, salt","Oil"],steps:["Grind sprouts coarsely; mix with besan and spices to a thick batter.","Stir in chopped onion and coriander.","Pour on a hot tawa, spread to a thick disc.","Cook both sides till golden."],nutrition:{kcal:200,protein:11,carbs:22,fat:6}},
+  b20:{ingredients:["1 cup rolled oats","Mixed vegetables (carrot, peas, beans)","Onion, tomato","Turmeric, cumin","Water, oil"],steps:["Temper cumin, sauté onion and vegetables.","Add turmeric and water, bring to a boil.","Stir in oats.","Cook 4-5 min, stirring, till thick and creamy."],nutrition:{kcal:220,protein:8,carbs:32,fat:6}},
+  b21:{ingredients:["4 bread slices","Sliced cucumber, tomato, onion, capsicum","Butter","Green chutney or ketchup","Chaat masala"],steps:["Spread chutney or butter on bread slices.","Layer sliced vegetables, sprinkle chaat masala.","Close the sandwich.","Grill or toast on a pan with a little butter till golden both sides."],nutrition:{kcal:280,protein:8,carbs:38,fat:10}},
+  b22:{ingredients:["1 cup rava (semolina)","1/2 cup curd","Water, as needed","Chopped onion, tomato","Cumin, coriander, salt","Oil"],steps:["Mix rava with curd and water; rest 15 min to thicken slightly.","Stir in chopped vegetables and spices.","Pour on a hot tawa, spread thin.","Cook both sides till golden."],nutrition:{kcal:210,protein:6,carbs:30,fat:7}},
+  b23:{ingredients:["150g paneer, crumbled","Onion, tomato, green chili","Turmeric, garam masala","4 bread slices, butter"],steps:["Sauté onion, tomato and chili till soft.","Add turmeric, then crumbled paneer; cook 4-5 min.","Finish with garam masala.","Toast bread with butter and serve alongside."],nutrition:{kcal:320,protein:14,carbs:28,fat:16}},
+  b24:{ingredients:["4-5 bread slices, cubed","1 onion","Mustard seeds, curry leaves, turmeric, green chili","Lemon, oil"],steps:["Temper mustard, curry leaves, onion and chili.","Add turmeric and bread cubes, toss to coat evenly.","Cook 2-3 min till lightly crisp.","Finish with a squeeze of lemon."],nutrition:{kcal:240,protein:6,carbs:33,fat:8}},
+  b25:{ingredients:["Dosa batter","Finely chopped onion, green chili, coriander","Oil"],steps:["Mix chopped onion and chili into a portion of dosa batter.","Pour a thick disc on a hot tawa — don't spread too thin.","Drizzle oil, cover and cook till the base is golden.","Flip briefly, then serve with chutney and sambar."],nutrition:{kcal:220,protein:5,carbs:32,fat:7}},
+
+  m01:{ingredients:["1 cup rajma (kidney beans), soaked overnight","1 onion","2 tomatoes","Ginger-garlic paste","Cumin, rajma masala","Oil"],steps:["Pressure cook soaked rajma till soft.","Sauté onion till golden, add ginger-garlic and tomato, cook till oil separates.","Add spices and the boiled rajma with some of its water.","Simmer 15-20 min till the gravy thickens."],nutrition:{kcal:180,protein:9,carbs:24,fat:6}},
+  m02:{ingredients:["1 cup chickpeas, soaked overnight","1 onion","2 tomatoes","Ginger-garlic paste","Chole masala","Oil"],steps:["Pressure cook chickpeas till soft.","Sauté onion, ginger-garlic and tomato till oil separates.","Add chole masala and the boiled chickpeas with some water.","Simmer 15 min, lightly mashing a few for body."],nutrition:{kcal:200,protein:10,carbs:26,fat:7}},
+  m03:{ingredients:["1 cup chickpeas, soaked overnight","Whole spices (cinnamon, bay leaf)","1 onion, 2 tomatoes","Ginger-garlic, anardana or amchur","Oil"],steps:["Pressure cook chickpeas with whole spices till soft and slightly darker.","Sauté onion-tomato-ginger-garlic masala separately till oil separates.","Combine with the chickpeas and anardana/amchur, simmer till thick.","Finish with a tadka of cumin and dry red chili."],nutrition:{kcal:220,protein:10,carbs:26,fat:9}},
+  m04:{ingredients:["1 cup chickpeas, soaked overnight","Whole spices (tea bag optional for colour)","Dry roasted pindi chana masala","Ginger julienne, green chili, amchur"],steps:["Pressure cook chickpeas with whole spices till soft.","Drain well.","Toss the chickpeas with dry roasted pindi masala, ginger and amchur.","Heat through till coated — this is a dry style with minimal gravy."],nutrition:{kcal:210,protein:10,carbs:24,fat:9}},
+  m05:{ingredients:["1/2 cup whole black urad dal, soaked overnight","2 tbsp rajma, optional","Butter, cream","Tomato puree, ginger-garlic","Garam masala"],steps:["Pressure cook soaked dal (and rajma) till very soft.","Simmer with tomato puree, butter and spices for 30-40 min, mashing some dal for body.","Stir occasionally to prevent sticking.","Finish with cream and a final tempering of butter."],nutrition:{kcal:280,protein:11,carbs:24,fat:16}},
+  m06:{ingredients:["1/2 cup toor (arhar) dal","Turmeric","Tomato, garlic, cumin, dried red chili","Ghee, coriander"],steps:["Pressure cook dal with turmeric till soft; mash lightly.","Temper cumin, garlic, dried red chili and tomato in ghee.","Pour the tempering over the dal.","Simmer 5 min, garnish with coriander."],nutrition:{kcal:150,protein:9,carbs:20,fat:5}},
+  m07:{ingredients:["Pakora: besan, chopped onion, oil for frying","Kadhi: 1 cup curd, 3 tbsp besan, turmeric, mustard seeds, curry leaves, dried red chili"],steps:["Make small besan-onion pakoras, deep fry till golden.","Whisk curd with besan, turmeric and water into a smooth mixture.","Simmer, stirring continuously, for about 20 min till thickened.","Add pakoras, simmer 5 min; temper mustard, curry leaves and red chili, pour over."],nutrition:{kcal:220,protein:7,carbs:18,fat:13}},
+  m08:{ingredients:["1 cup lobia (black-eyed peas), soaked overnight","1 onion, 1 tomato","Ginger-garlic paste","Cumin, garam masala","Oil"],steps:["Pressure cook soaked lobia till soft.","Sauté onion, tomato and ginger-garlic till oil separates.","Add spices and the boiled lobia with a little water.","Simmer 10-15 min."],nutrition:{kcal:180,protein:10,carbs:24,fat:5}},
+  m09:{ingredients:["1 cup soya chunks","1 onion, 1 tomato","Ginger-garlic paste","Garam masala","Oil"],steps:["Soak soya chunks in hot water for 10 min, then squeeze out the water well.","Sauté onion, tomato and ginger-garlic till oil separates.","Add spices and the soya chunks.","Simmer 10 min in a little water."],nutrition:{kcal:200,protein:18,carbs:14,fat:9}},
+  m10:{ingredients:["Mustard greens (sarson), spinach, bathua if available","2 tbsp maize flour (makki atta)","Ginger-garlic, green chili","Ghee, butter for tempering"],steps:["Boil the greens till soft, then blend coarsely.","Cook the puree with maize flour to thicken, about 20-25 min, stirring often.","Finish with a ghee tempering of ginger, garlic and green chili.","Top with a knob of butter before serving."],nutrition:{kcal:180,protein:6,carbs:12,fat:12}},
+  m11:{ingredients:["200g paneer, cubed","Tomato puree","Cashew paste or cream","Butter, ginger-garlic paste","Garam masala, a pinch of sugar"],steps:["Sauté ginger-garlic, add tomato puree and cook till thick.","Add cashew paste/cream, butter and spices, simmer.","Add paneer cubes, simmer 5 min.","Finish with a swirl of cream."],nutrition:{kcal:320,protein:13,carbs:14,fat:24}},
+  m12:{ingredients:["200g paneer, crumbled","Onion, tomato, capsicum (optional)","Green chili, turmeric","Garam masala, oil"],steps:["Sauté onion, capsicum and tomato till soft.","Add turmeric and spices.","Add crumbled paneer.","Toss and cook 4-5 min."],nutrition:{kcal:280,protein:16,carbs:8,fat:20}},
+  m13:{ingredients:["Mixed seasonal vegetables (carrot, beans, peas, potato, cauliflower)","Onion, tomato","Cumin, turmeric, garam masala","Oil"],steps:["Temper cumin, sauté onion till translucent.","Add tomato and turmeric, cook till soft.","Add chopped mixed vegetables.","Cover and cook till tender, finish with garam masala."],nutrition:{kcal:130,protein:4,carbs:14,fat:7}},
+  m14:{ingredients:["250g okra (bhindi), sliced","Onion, tomato (optional)","Cumin, turmeric, amchur","Oil"],steps:["Sauté sliced bhindi on high heat till slightly crisp — this reduces stickiness.","Separately sauté onion and spices.","Combine and toss together.","Finish with a sprinkle of amchur."],nutrition:{kcal:140,protein:3,carbs:14,fat:8}},
+  m15:{ingredients:["2 potatoes, cubed","1 small cauliflower, cut into florets","Cumin, ginger","Turmeric, garam masala","Oil"],steps:["Sauté cumin and ginger in oil.","Add potato, cauliflower, turmeric and salt.","Cover and cook on low heat till tender, stirring occasionally.","Finish with garam masala."],nutrition:{kcal:160,protein:4,carbs:20,fat:8}},
+  m16:{ingredients:["1 large eggplant","1 onion, 1 tomato","Ginger-garlic, green chili","Cumin, oil"],steps:["Roast eggplant directly over a flame till charred and soft; peel and mash.","Sauté onion, ginger-garlic, chili and tomato till soft.","Add the mashed eggplant.","Cook 8-10 min till the oil separates."],nutrition:{kcal:150,protein:3,carbs:14,fat:9}},
+  m17:{ingredients:["1 cup boiled chickpeas","1 onion, 1 tomato","Ginger-garlic paste","Chana masala powder","Oil"],steps:["Sauté onion till golden, add ginger-garlic and tomato, cook till soft.","Add chana masala and the boiled chickpeas with a little water.","Simmer 10-15 min.","Adjust consistency with water as needed."],nutrition:{kcal:210,protein:10,carbs:28,fat:7}},
+  m18:{ingredients:["1 bottle gourd (lauki), peeled & chopped","Cumin, turmeric, green chili","Tomato, optional","Oil"],steps:["Temper cumin, add chopped lauki, turmeric and salt.","Cover and cook on low heat — lauki releases its own water.","Cook till soft, about 12-15 min.","Mash lightly if you prefer a smoother texture."],nutrition:{kcal:100,protein:2,carbs:12,fat:5}},
+  m19:{ingredients:["1 bunch spinach, blanched & pureed","200g paneer, cubed","Onion, tomato","Ginger-garlic, garam masala","Cream, optional"],steps:["Blanch spinach briefly, then blend to a smooth puree.","Sauté onion, ginger-garlic and tomato till soft.","Add the spinach puree and spices, simmer.","Add paneer cubes, simmer 5 min, finish with cream."],nutrition:{kcal:260,protein:13,carbs:10,fat:18}},
+  m20:{ingredients:["Kofta: paneer, mashed potato, cornflour, oil for frying","Gravy: tomato, cashew paste, cream, butter, garam masala"],steps:["Mix grated paneer, mashed potato and cornflour; shape into small balls and deep fry till golden.","Make a smooth tomato-cashew gravy with butter and cream.","Simmer the gravy till it thickens slightly.","Add the fried koftas just before serving so they stay soft."],nutrition:{kcal:350,protein:10,carbs:22,fat:24}},
+  m21:{ingredients:["1/2 cup split moong dal","Turmeric, cumin","Tomato, garlic","Ghee"],steps:["Pressure cook dal with turmeric till soft; mash lightly.","Temper cumin, garlic and tomato in ghee.","Pour the tempering over the dal.","Simmer 5 min."],nutrition:{kcal:150,protein:9,carbs:20,fat:4}},
+  m22:{ingredients:["1/2 cup toor dal","Mixed vegetables (drumstick, brinjal, pumpkin)","Tamarind, sambar powder","Mustard seeds, curry leaves"],steps:["Cook dal till soft, mash lightly.","Cook the mixed vegetables separately till tender.","Combine dal, vegetables, tamarind water and sambar powder, simmer 10 min.","Temper mustard and curry leaves, add to finish."],nutrition:{kcal:130,protein:6,carbs:18,fat:4}},
+  m23:{ingredients:["1 tomato","Tamarind water","Rasam powder, garlic","Mustard seeds, cumin, curry leaves","A spoon of cooked dal, optional"],steps:["Boil tomato, tamarind water, rasam powder and garlic together for 10 min.","Temper mustard, cumin and curry leaves.","Add the tempering to the boiling rasam.","Simmer 2-3 min more."],nutrition:{kcal:60,protein:3,carbs:9,fat:1}},
+  m24:{ingredients:["200g paneer, cubed","Yogurt & tikka spices for marinade","Onion, capsicum","Tomato gravy base, cream"],steps:["Marinate paneer cubes in spiced yogurt for 20 min.","Grill or pan-roast the marinated paneer till lightly charred.","Make an onion-tomato gravy finished with cream.","Add the grilled paneer and capsicum, simmer briefly."],nutrition:{kcal:300,protein:14,carbs:13,fat:21}},
+  m25:{ingredients:["200g paneer, cubed","Capsicum, onion, tomato","Coriander seeds & dried red chili, roasted & ground (kadai masala)","Oil"],steps:["Dry roast and coarsely grind coriander seeds and dried red chilies.","Sauté onion, capsicum and tomato.","Add the kadai masala and paneer cubes.","Toss and simmer briefly."],nutrition:{kcal:290,protein:13,carbs:12,fat:21}},
+  m26:{ingredients:["200g paneer, cubed","1 cup green peas","Onion, tomato","Ginger-garlic, garam masala","Oil"],steps:["Sauté onion, ginger-garlic and tomato till soft.","Add spices and peas, cook 5 min.","Add paneer cubes and a little water.","Simmer till the peas are tender."],nutrition:{kcal:270,protein:12,carbs:14,fat:19}},
+  m27:{ingredients:["2 potatoes, diced","1 cup green peas","Onion, tomato","Cumin, turmeric, garam masala","Oil"],steps:["Temper cumin, sauté onion and tomato.","Add potato, peas, turmeric and salt.","Cover and cook till tender.","Finish with garam masala."],nutrition:{kcal:160,protein:4,carbs:22,fat:7}},
+  m28:{ingredients:["Kofta: grated mixed vegetables, besan, oil for frying","Gravy: onion, tomato, cashew paste, garam masala"],steps:["Mix grated vegetables with besan and spices, shape into balls and deep fry till golden.","Make an onion-tomato-cashew gravy.","Simmer the gravy till thick.","Add koftas just before serving."],nutrition:{kcal:280,protein:6,carbs:24,fat:18}},
+  m29:{ingredients:["Mixed vegetables","Coconut, cashew, fennel seeds","Green chili, onion","Oil"],steps:["Grind coconut, cashew and fennel into a smooth paste.","Sauté onion, add vegetables and cook till half done.","Add the coconut paste and a little water.","Simmer till vegetables are tender."],nutrition:{kcal:190,protein:5,carbs:16,fat:12}},
+  m30:{ingredients:["1 cup boiled chickpeas","Spinach, pureed","Onion, ginger-garlic","Garam masala, oil"],steps:["Sauté onion and ginger-garlic till golden.","Add spinach puree and spices, cook 5 min.","Add the boiled chickpeas.","Simmer 10 min."],nutrition:{kcal:190,protein:9,carbs:22,fat:7}},
+  m31:{ingredients:["1 bunch fenugreek (methi) leaves","1 cup green peas","Cream, cashew paste","Onion, garam masala"],steps:["Sauté onion and cashew paste till fragrant.","Add chopped methi and peas, cook 5 min.","Add cream and a little water.","Simmer till the peas are tender."],nutrition:{kcal:220,protein:6,carbs:14,fat:16}},
+  m32:{ingredients:["2-3 capsicums, hollowed","Spiced mashed potato or paneer filling","Onion-tomato gravy, light"],steps:["Stuff hollowed capsicums with the spiced potato/paneer mixture.","Shallow fry or bake briefly to soften the capsicum.","Prepare a light onion-tomato gravy.","Simmer the stuffed capsicums in the gravy for 10 min."],nutrition:{kcal:220,protein:6,carbs:22,fat:12}},
+  m33:{ingredients:["1/2 cup toor dal","Wheat flour for dhokli (dumplings)","Tomato, jaggery, tamarind","Mustard seeds, curry leaves"],steps:["Cook dal till soft with turmeric.","Make a stiff wheat dough, roll thin and cut into diamond-shaped dhokli.","Add the dhokli pieces to the boiling dal, cook till done.","Temper mustard and curry leaves, add tamarind and a touch of jaggery."],nutrition:{kcal:280,protein:11,carbs:40,fat:8}},
+  m34:{ingredients:["Mixed winter vegetables (purple yam, sweet potato, surti beans, brinjal)","Besan & fenugreek muthiya (dumplings), steamed","Green garlic, coconut","Oil"],steps:["Make small besan-fenugreek muthiya, steam and lightly pan-fry.","Sauté green garlic and spices.","Add chopped mixed vegetables, cover and cook till tender.","Add the muthiya, toss gently and finish with coconut."],nutrition:{kcal:220,protein:6,carbs:22,fat:12}},
+  m35:{ingredients:["1 cup besan","Onion, green chili, garlic","Turmeric, water","Oil"],steps:["Temper mustard seeds, onion, garlic and green chili.","Whisk besan with water until smooth, with no lumps.","Pour in, stirring continuously to avoid lumps.","Cook 8-10 min till thick and fully cooked through."],nutrition:{kcal:160,protein:8,carbs:14,fat:8}},
+  m36:{ingredients:["1/2 cup toor dal","Turmeric","A little jaggery","Ghee, cumin"],steps:["Pressure cook dal with turmeric till very soft.","Mash well.","Add a touch of jaggery and salt.","Finish with a ghee-cumin tempering."],nutrition:{kcal:140,protein:8,carbs:18,fat:4}},
+  m37:{ingredients:["Mixed vegetables","Onion","Cashew or poppy seed paste, yogurt","Whole spices (cinnamon, cloves), oil"],steps:["Sauté whole spices and onion till golden.","Add cashew/poppy paste and yogurt, cook briefly.","Add vegetables and a little water.","Simmer till tender."],nutrition:{kcal:200,protein:5,carbs:16,fat:13}},
+  m38:{ingredients:["Mixed vegetables (bitter gourd, drumstick, potato, brinjal)","Milk or ground mustard paste","Panch phoron (5-spice)","Ghee"],steps:["Temper panch phoron in ghee.","Add chopped mixed vegetables, sauté briefly.","Add a little milk/mustard paste and water.","Simmer till vegetables are just tender."],nutrition:{kcal:120,protein:3,carbs:14,fat:6}},
+  m39:{ingredients:["1/2 cup bengal gram (chana) dal","Coconut slivers, bay leaf","Cumin, ghee","A pinch of sugar"],steps:["Pressure cook chana dal till soft but still holding shape.","Temper bay leaf, cumin and coconut slivers in ghee.","Pour the tempering over the dal.","Add a pinch of sugar, simmer 5 min."],nutrition:{kcal:200,protein:10,carbs:26,fat:7}},
+  m40:{ingredients:["2 potatoes, diced","Poppy seeds, soaked & ground to a paste","Green chili","Mustard oil, turmeric"],steps:["Grind soaked poppy seeds with green chili into a paste.","Sauté potatoes in mustard oil with turmeric.","Add the poppy seed paste and a little water.","Cook covered till potatoes are tender."],nutrition:{kcal:220,protein:4,carbs:22,fat:13}},
+  m41:{ingredients:["Mixed vegetables (drumstick, raw banana, yam, carrot)","Coconut, cumin","Curd, coconut oil, curry leaves"],steps:["Cook the mixed vegetables till just tender.","Grind coconut and cumin to a coarse paste, add to the vegetables.","Finish with a little curd.","Drizzle coconut oil and garnish with curry leaves."],nutrition:{kcal:160,protein:4,carbs:16,fat:9}},
+  m42:{ingredients:["1/2 cup rice","1/4 cup moong dal","Mixed vegetables","Turmeric, cumin","Ghee"],steps:["Wash rice and dal together.","Temper cumin in ghee, add vegetables and turmeric.","Add the rice-dal mix and water.","Pressure cook till soft and mushy."],nutrition:{kcal:280,protein:9,carbs:48,fat:6}},
+  m43:{ingredients:["1 bunch bathua leaves, chopped","Onion, tomato","Cumin, garlic","Oil"],steps:["Sauté cumin, garlic and onion.","Add chopped bathua leaves and tomato.","Cover and cook till the leaves wilt and soften.","Mash lightly before serving."],nutrition:{kcal:100,protein:4,carbs:10,fat:5}},
+  m44:{ingredients:["1/2 cup split lentils (moong or masoor)","1/2 cup curd","Turmeric","Mustard seeds, curry leaves or cumin, green chili","Ghee"],steps:["Cook dal till soft with turmeric; mash lightly.","Let it cool slightly, then whisk in curd off the heat (to avoid splitting).","Warm gently, stirring continuously.","Temper mustard seeds, cumin and green chili in ghee, pour over to finish."],nutrition:{kcal:180,protein:9,carbs:18,fat:8}},
+  m45:{ingredients:["4-5 baby potatoes, boiled & halved","Strong black tea, brewed","Cumin, turmeric, red chili powder","Ghee or oil"],steps:["Brew a strong cup of black tea, set aside.","Temper cumin in ghee, add turmeric and chili powder.","Add the boiled potatoes.","Pour in the brewed tea instead of water, simmer till it reduces and coats the potatoes."],nutrition:{kcal:170,protein:3,carbs:22,fat:7}}
+};
+
 /* ---------------- STORAGE ---------------- */
 const STORAGE_KEY = "akb_history_v1";
 
@@ -320,11 +481,13 @@ function logMeal(meal, item){
   h.unshift({date: todayStr(), meal, id: item.id, name: item.name, loggedAt: Date.now()});
   saveHistory(h);
   renderHistory();
+  renderDashboard();
 }
 function undoEntry(loggedAt){
   const h = getHistory().filter(e => e.loggedAt !== loggedAt);
   saveHistory(h);
   renderHistory();
+  renderDashboard();
 }
 
 /* ---------------- SUGGESTION LOGIC ---------------- */
@@ -379,12 +542,20 @@ function renderSuggestion(item, animate){
 function fill(item){
   dishNameEl.textContent = item.name;
   serveNoteEl.textContent = item.serve;
+  const recipe = RECIPES[item.id];
+  const nutriChips = recipe ? `
+    <span class="chip">${recipe.nutrition.kcal} kcal</span>
+    <span class="chip">${recipe.nutrition.protein}g protein</span>
+  ` : "";
   tagRowEl.innerHTML = `
     <span class="chip veg">veg</span>
     <span class="chip">${item.cuisine}</span>
     <span class="chip">${item.time}</span>
+    ${nutriChips}
   `;
   katori.classList.remove("swap");
+  recipePanel.classList.remove("open");
+  renderRecipe(item);
 }
 
 function newSuggestion(){
@@ -434,6 +605,62 @@ function renderHistory(){
   });
 }
 
+/* Recipe panel */
+const recipeToggle = document.getElementById("recipeToggle");
+const recipePanel = document.getElementById("recipePanel");
+const recipeIngredientsEl = document.getElementById("recipeIngredients");
+const recipeStepsEl = document.getElementById("recipeSteps");
+const recipeNoteEl = document.getElementById("recipeNote");
+
+function renderRecipe(item){
+  const recipe = RECIPES[item.id];
+  if(!recipe){
+    recipeIngredientsEl.innerHTML = "";
+    recipeStepsEl.innerHTML = "";
+    recipeNoteEl.textContent = "No recipe details for this one yet.";
+    return;
+  }
+  recipeIngredientsEl.innerHTML = recipe.ingredients.map(i => `<li>${i}</li>`).join("");
+  recipeStepsEl.innerHTML = recipe.steps.map(s => `<li>${s}</li>`).join("");
+  const n = recipe.nutrition;
+  const isMain = item.meals.includes("lunch") || item.meals.includes("dinner");
+  const scopeNote = isMain
+    ? "Nutrition is for the dal/sabzi itself — add your own roti or rice on top of this."
+    : "Nutrition is for the full dish as described above.";
+  recipeNoteEl.textContent = `~${n.kcal} kcal · ${n.protein}g protein · ${n.carbs}g carbs · ${n.fat}g fat per serving (approximate, varies with oil/ghee used). ${scopeNote}`;
+}
+
+recipeToggle.addEventListener("click", () => {
+  recipePanel.classList.toggle("open");
+});
+
+/* Dashboard: running totals from logged history */
+const dashTodayKcal = document.getElementById("dashTodayKcal");
+const dashTodayProtein = document.getElementById("dashTodayProtein");
+const dashWeekKcal = document.getElementById("dashWeekKcal");
+const dashWeekProtein = document.getElementById("dashWeekProtein");
+
+function sumNutrition(maxDaysAgo){
+  const h = getHistory().filter(e => daysAgo(e.date) <= maxDaysAgo);
+  return h.reduce((acc, e) => {
+    const recipe = RECIPES[e.id];
+    if(recipe){
+      acc.kcal += recipe.nutrition.kcal;
+      acc.protein += recipe.nutrition.protein;
+    }
+    return acc;
+  }, {kcal:0, protein:0});
+}
+
+function renderDashboard(){
+  const today = sumNutrition(0);
+  const week = sumNutrition(6);
+  dashTodayKcal.textContent = today.kcal;
+  dashTodayProtein.textContent = today.protein;
+  dashWeekKcal.textContent = week.kcal;
+  dashWeekProtein.textContent = week.protein;
+}
+
 /* Manual log */
 const manualToggle = document.getElementById("manualToggle");
 const manualPanel = document.getElementById("manualPanel");
@@ -473,6 +700,7 @@ document.querySelectorAll(".tab").forEach(tab => {
 /* ---------------- INIT ---------------- */
 setMeal(currentMeal);
 renderHistory();
+renderDashboard();
 </script>
 </body>
 </html>
